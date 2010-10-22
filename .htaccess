@@ -2,11 +2,23 @@ RewriteEngine on
 
 RewriteBase /REST/
 
-#with ID
-RewriteRule ^([^/]+)/([0-9]+)/?$	controller.php?element=$1&id=$2 [QSA]
+#element/id/method.format?params
+RewriteRule ^([a-zA-Z]+)/([0-9]+)/?/([a-zA-Z]+)\.([a-zA-Z]+)\?(.+)$	controller.php?REST_element=$1&REST_id=$2&REST_operation=$3&REST_format=$4&$5 [QSA]
 
-#without ID
-RewriteRule ^([^/]+)/?$	controller.php?element=$1 [QSA]
+#element/id/method.format
+RewriteRule ^([a-zA-Z]+)/([0-9]+)/?/([a-zA-Z]+)\.([a-zA-Z]+)$	controller.php?REST_element=$1&REST_id=$2&REST_operation=$3&REST_format=$4 [QSA]
 
-#without ID/Element
-RewriteRule ^/?$	controller.php
+#element/id/
+RewriteRule ^([a-zA-Z]+)/([0-9]+)/?$	controller.php?REST_element=$1&REST_id=$2&REST_format [QSA]
+
+#element/id/method.format?params
+RewriteRule ^([a-zA-Z]+)/([a-zA-Z]+)\.([a-zA-Z]+)\?(.+)$	controller.php?REST_element=$1&REST_operation=$2&REST_format=$3&$4 [QSA]
+
+#element/id/method.format
+RewriteRule ^([a-zA-Z]+)/([a-zA-Z]+)\.([a-zA-Z]+)$	controller.php?REST_element=$1&REST_operation=$2&REST_format=$2 [QSA]
+
+#element/
+RewriteRule ^([a-zA-Z]+)/?$	controller.php?REST_element=$1 [QSA]
+
+#wrong format
+RewriteRule .*	controller.php
