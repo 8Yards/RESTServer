@@ -1,0 +1,12 @@
+RewriteEngine on
+
+RewriteBase /REST/
+
+#with ID
+RewriteRule ^([^/]+)/([0-9]+)/?$	controller.php?element=$1&id=$2 [QSA]
+
+#without ID
+RewriteRule ^([^/]+)/?$	controller.php?element=$1 [QSA]
+
+#without ID/Element
+RewriteRule ^/?$	controller.php
