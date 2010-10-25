@@ -16,6 +16,7 @@ function myErrorHandler($errno, $errstr, $errfile, $errline) {
 	RestUtils::error(500, $report);
 }
 
+include('Resource.class.php');
 include('Profiles.class.php');
 include('Contacts.class.php');
 include('Groups.class.php');
@@ -38,5 +39,5 @@ $response = $element->dispatcher($request);
 if( $response === false )
 	RestUtils::error(501);
 
-RestUtils::sendResponse($response->getStatus(), $response->getBody());
+RestUtils::sendResponse( $response->getStatus(), $response->getBody() );
 ?>

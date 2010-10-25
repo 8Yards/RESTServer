@@ -1,5 +1,9 @@
 <?php
-abstract class Groups implements Element {
+abstract class Groups extends Element {
+	function __construct($request) {
+		parent::__construct($request);
+	}
+	
 	public function find($id) {return '';}
 	public function retrieveAll() {return '';}
 	public function delete($id) {return '';}

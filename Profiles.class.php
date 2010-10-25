@@ -1,29 +1,19 @@
 <?php
-class Profiles implements Element {
-	private $request;
-	private $dispatchArray = array();
-	
+class Profiles extends Element {
 	function __construct($request) {
-		$this->request = $request;
+		parent::__construct($request);
+		
 		$this->dispatchArray['get'][false][null] = 'retrieveAll';
 		$this->dispatchArray['get'][false]['return'] = 'reply';
 		$this->dispatchArray['get'][true][null] = 'test';
+		$this->dispatchArray['post'][true][null] = 'testpost';
 	}
 	
-	function getCalledMethod($request) {
-		if( !isset( $this->dispatchArray[ $request->getMethod() ][ ($request->getID() != null ? true:false) ][ $request->getOperation() ] ) )
-			return '';
-		
-		return $this->dispatchArray[ $request->getMethod() ][ ($request->getID() != null ? true:false) ][ $request->getOperation() ];
-	}
-	
-	function dispatcher($request) {
-		$call = $this->getCalledMethod($request);
-	
-		if(!is_callable( array( $this, $call ) ))
-			return false;
-		
-		return call_user_func( array( $this, $call ), $request->getData() );
+	public function testpost() {
+		$status = 200;
+		$result = $this->request->getData();
+		$response = array('res' => $result->test1);
+		return new Response($status, $response);
 	}
 	
 	public function test() {

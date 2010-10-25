@@ -51,8 +51,8 @@ class RestUtils {
 	}
 
 	public static function processRequest() {
-		if( !RestUtils::authentication() )
-			RestUtils::error(401);
+		/*if( !RestUtils::authentication() )
+			RestUtils::error(401);*/
 	
 		// get our verb
 		$request_method = strtolower($_SERVER['REQUEST_METHOD']);
@@ -84,17 +84,20 @@ class RestUtils {
 				unset($data['REST_format']);
 				break;
 			// so are posts
-			case 'post':
+			/*case 'post':
 				$data = $_POST;
-				break;
+				break;*/
 			// here's the tricky bit...
 			case 'put':
+			case 'post':
 				// basically, we read a string from PHP's special input location,
 				// and then parse it out into an array via parse_str... per the PHP docs:
 				// Parses str  as if it were the query string passed via a URL and sets
 				// variables in the current scope.
-				parse_str(file_get_contents('php://input'), $put_vars);
-				$data = $put_vars;
+				$contents = file_get_contents('php://input');
+				//die('-'.$contents.'-');
+				$data = json_decode($contents);
+				//$data = $contents;
 				break;
 		}
 
@@ -117,10 +120,10 @@ class RestUtils {
 		// other pieces to your requests)
 		$return_obj->setRequestVars($data);
 
-		if(isset($data['data'])) {
+		/*if(isset($data['data'])) {
 			// translate the JSON to an Object for use however you want
 			$return_obj->setData(json_decode($data['data']));
-		}
+		}*/
 		return $return_obj;
 	}
 
@@ -185,8 +188,9 @@ class RestUtils {
 		// pages with body are easy
 		if($body != '') {
 			// send the body
-			if($type == 'application/json')
+			if($type == 'application/json'){
 				$body = json_encode($body);
+				}
 		}
 		// we need to create the body if none is passed
 		else {
@@ -216,6 +220,7 @@ class RestUtils {
 		}
 		
 		echo $body;
+		exit();
 	}
 	
 	public static function error($status='', $body='') {
@@ -279,29 +284,21 @@ class RestRequest {
 	}
 }
 
-interface Element {
-	function dispatcher($request);
-	function getCalledMethod($request);
-
-	public function retrieveAll(); //GET
-	/*public function find($id); //GET ?id=
-	public function delete($id); //DELETE ?id=
-	public function update($id); //Update: POST/PUT ?id=
-	public function save(); //Create: POST/PUT*/
-}
-
 class Response {
 	private $status;
 	private $body;
 	
-	function __construct($status, $body='') {
+	function __construct($status, $body='', $type='') {
 		$this->status = $status;
 		$this->body = $body;
+		$this->type = $type;
 	}
 	
 	function getStatus() { return $this->status; }
 	function getBody() { return $this->body; }
+	function getType() { return $this->type; }
 	function setStatus($status) { $this->status = $status; }
 	function setBody($body) { $this->body = $body; }
+	function setType($type) { $this->type = $type; }
 }
 ?>
