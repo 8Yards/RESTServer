@@ -96,7 +96,8 @@ class RestUtils {
 				// variables in the current scope.
 				$contents = file_get_contents('php://input');
 				//die('-'.$contents.'-');
-				$data = json_decode($contents);
+				$data = RestUtils::data_decode( $contents, $_SERVER['CONTENT_TYPE'] );
+				
 				//$data = $contents;
 				break;
 		}
@@ -120,11 +121,120 @@ class RestUtils {
 		// other pieces to your requests)
 		$return_obj->setRequestVars($data);
 
-		/*if(isset($data['data'])) {
-			// translate the JSON to an Object for use however you want
-			$return_obj->setData(json_decode($data['data']));
-		}*/
 		return $return_obj;
+	}
+
+	/**
+	 * Simple recursive function to build an XML response.
+	 */
+	public static function xml_encode($k, $v) {
+		if (is_object ($v) && strtolower (get_class ($v)) == 'simplexmlelement') {
+			return preg_replace ('/<\?xml(.*?)\?>/', '', $v->asXML ());
+		}
+		$res = '';
+		$attrs = '';
+		if (! is_numeric ($k)) {
+			$res = '<' . $k . '{{attributes}}>';
+		}
+		if (is_array ($v)) {
+			foreach ($v as $key => $value) {
+				if (strpos ($key, '@') === 0) {
+					$attrs .= ' ' . substr ($key, 1) . '="' . $this->_xml_entities ($value) . '"';
+					continue;
+				}
+				$res .= RestUtils::xml_encode($key, $value);
+				$keys = array_keys ($v);
+				if (is_numeric ($key) && $key != array_pop ($keys)) {
+					$res .= '</' . $k . ">\n<" . $k . '>';
+				}
+			}
+		} else {
+			$res .= RestUtils::_xml_entities ($v);
+		}
+		if (! is_numeric ($k)) {
+			$res .= '</' . $k . ">\n";
+		}
+		$res = str_replace ('<' . $k . '{{attributes}}>', '<' . $k . $attrs . '>', $res);
+		return $res;
+	}
+
+	/**
+	 * Converts entities to unicode entities (ie. < becomes &#60;).
+	 * From php.net/htmlentities comments, user "webwurst at web dot de"
+	 */
+	public static function _xml_entities ($string) {
+		$trans = get_html_translation_table (HTML_ENTITIES);
+
+		foreach ($trans as $key => $value) {
+			$trans[$key] = '&#' . ord ($key) . ';';
+		}
+
+		return strtr ($string, $trans);
+	}
+	
+	public static function xml_decode($contents) {
+		$xml = new SimpleXMLElement ($contents);
+
+		//if ($xml->getName () == 'nebula') {
+			// multiple
+			
+			/*$res = array ();
+			//$cls = get_class ($this);
+			//$cls = $xml->getName();
+			foreach ($xml->children () as $child) {
+				$obj = new stdClass();
+				foreach ((array) $child as $k => $v) {
+					$k = str_replace ('-', '_', $k);
+					if (isset ($v['nil']) && $v['nil'] == 'true') {
+						continue;
+					} else {
+						$obj->_data[$k] = $v;
+					}
+				}
+				$res[] = $obj;
+			}*/
+			
+			$res = array ();
+			//$cls = get_class ($this);
+			//$cls = $xml->getName();
+			foreach ($xml->children () as $child) {
+				$obj = new stdClass();
+				foreach ((array) $child as $k => $v) {
+					$k = str_replace ('-', '_', $k);
+					if (isset ($v['nil']) && $v['nil'] == 'true') {
+						continue;
+					} else {
+						$obj->_data[$k] = $v;
+					}
+				}
+				$res[] = $obj;
+			}
+			
+			echo $res;
+			return $res;
+		/*} elseif ($xml->getName () == 'errors') {
+			// parse error message
+			$this->error = $xml->error;
+			$this->errno = $this->response_code;
+			return false;
+		}*/
+	}
+	
+	public static function data_encode($contents, $type='json') {
+		switch($type) {
+			case 'json':
+				return json_encode($contents);
+			case 'xml':
+				return RestUtils::xml_encode('nebula', $contents);
+		}
+	}
+	
+	public static function data_decode($contents, $type='json') {
+		if( strpos($type, 'json') )
+			return json_decode($contents);
+		else
+			//return RestUtils::xml_decode($contents);
+			return simplexml_load_string($contents);
 	}
 
 	public static function getStatusCodeMessage($status) {
@@ -178,19 +288,23 @@ class RestUtils {
 		return (isset($codes[$status])) ? $codes[$status] : '';
 	}
 
-	public static function sendResponse($status = 200, $body = '', $type = 'application/json') {
+	public static function sendResponse($status = 200, $body = '', $type = 'json') {
 		$status_header = 'HTTP/1.1 ' . $status . ' ' . RestUtils::getStatusCodeMessage($status);
 		// set the status
 		header($status_header);
 		// set the content type
-		header('Content-type: '.$type);
+		if($type == 'json')
+			header('Content-type: application/json');
+		if($type == 'xml')
+			header('Content-type: application/xml');
 
 		// pages with body are easy
 		if($body != '') {
 			// send the body
-			if($type == 'application/json'){
-				$body = json_encode($body);
-				}
+			if($type == 'json')
+				$body = RestUtils::data_encode($body, 'json');
+			if($type == 'xml')
+				$body = RestUtils::data_encode($body, 'xml');
 		}
 		// we need to create the body if none is passed
 		else {
@@ -214,8 +328,8 @@ class RestUtils {
 					$body = 'The requested method is not implemented.';
 					break;
 				//TODO., more status? default?
-				default:
-					RestUtils::error();
+				/*default:
+					RestUtils::error();*/
 			}
 		}
 		
@@ -249,16 +363,17 @@ class RestRequest {
 		$this->data			= '';
 		$this->element			= '';
 		$this->id				= '';
-		$this->http_accept		= 'json';//(strpos($_SERVER['HTTP_ACCEPT'], 'json')) ? 'json' : 'xml';
+		$this->http_accept		= (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'xml')) ? 'xml' : 'json';
 		$this->method			= 'get';
 	}
 
 	//Setters
 	public function setData($data) { $this->data = $data; }
-	public function setMethod($method) { $this->method = $method; }
-	public function setOperation($operation) { $this->operation = $operation; }
 	public function setElement($element) { $this->element = $element; }
 	public function setID($id) { $this->id = $id; }
+	public function setMethod($method) { $this->method = $method; }
+	public function setOperation($operation) { $this->operation = $operation; }
+	public function setHttpAccept($http_accept) { $this->http_accept = $http_accept; }
 	public function setRequestVars($request_vars) { $this->request_vars = $request_vars; }
 	
 	//Getters

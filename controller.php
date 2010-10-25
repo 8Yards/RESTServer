@@ -22,6 +22,7 @@ include('Contacts.class.php');
 include('Groups.class.php');
 
 $request = RestUtils::processRequest();
+$request->setHttpAccept('application/xml');
 
 switch( strtolower( $request->getElement() ) ) {
 	case 'profiles':
@@ -39,5 +40,9 @@ $response = $element->dispatcher($request);
 if( $response === false )
 	RestUtils::error(501);
 
-RestUtils::sendResponse( $response->getStatus(), $response->getBody() );
+if( strpos($request->getHttpAccept(), 'xml') )
+	$type = 'xml';
+else
+	$type = 'json';
+RestUtils::sendResponse( $response->getStatus(), $response->getBody(), $type );
 ?>
