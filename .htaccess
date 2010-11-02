@@ -3,19 +3,19 @@ RewriteEngine on
 RewriteBase /REST/
 
 #element/id/method?params
-RewriteRule ^([a-zA-Z]+)/([0-9]+)/?/([a-zA-Z]+)\.([a-zA-Z]+)\?(.+)$	controller.php?REST_element=$1&REST_id=$2&REST_operation=$3&$4 [QSA]
+RewriteRule ^([a-zA-Z]+)/([0-9]+)/([a-zA-Z]+)/?\?(.+)$	controller.php?REST_element=$1&REST_id=$2&REST_operation=$3&$4 [QSA]
 
 #element/id/method
-RewriteRule ^([a-zA-Z]+)/([0-9]+)/?/([a-zA-Z]+)$	controller.php?REST_element=$1&REST_id=$2&REST_operation=$3 [QSA]
+RewriteRule ^([a-zA-Z]+)/([0-9]+)/([a-zA-Z]+)/?$	controller.php?REST_element=$1&REST_id=$2&REST_operation=$3 [QSA]
 
 #element/id/
 RewriteRule ^([a-zA-Z]+)/([0-9]+)/?$	controller.php?REST_element=$1&REST_id=$2 [QSA]
 
 #element/method?params
-RewriteRule ^([a-zA-Z]+)/([a-zA-Z]+)\?(.+)$	controller.php?REST_element=$1&REST_operation=$2&$3 [QSA]
+RewriteRule ^([a-zA-Z]+)/([a-zA-Z]+)/?\?(.+)$	controller.php?REST_element=$1&REST_operation=$2&$3 [QSA]
 
 #element/method
-RewriteRule ^([a-zA-Z]+)/([a-zA-Z]+)$	controller.php?REST_element=$1&REST_operation=$2 [QSA]
+RewriteRule ^([a-zA-Z]+)/([a-zA-Z]+)/?$	controller.php?REST_element=$1&REST_operation=$2 [QSA]
 
 #element/
 RewriteRule ^([a-zA-Z]+)/?$	controller.php?REST_element=$1 [QSA]
