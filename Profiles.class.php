@@ -13,6 +13,7 @@ class Profiles extends Element {
 		$status = 200;
 		$result = $this->request->getData();
 		$response = array('res' => $result->test1);
+		//$response = array('1' => array('z'=>'2','3','4'), 6 => array('a','b','c'));
 		return new Response($status, $response);
 	}
 	

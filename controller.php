@@ -22,7 +22,6 @@ include('Contacts.class.php');
 include('Groups.class.php');
 
 $request = RestUtils::processRequest();
-$request->setHttpAccept('application/xml');
 
 switch( strtolower( $request->getElement() ) ) {
 	case 'profiles':
