@@ -13,7 +13,7 @@ function myErrorHandler($errno, $errstr, $errfile, $errline) {
 	Error: $errstr<br/>
 	File: $errfile<br/>
 	Line: $errline";
-	
+
 	report($report);
 }
 ?>

@@ -2,11 +2,15 @@
 class Profiles extends Element {
 	function __construct($request) {
 		parent::__construct($request);
-		
+
 		$this->dispatchArray['get'][false][null] = 'retrieveAll';
 		$this->dispatchArray['get'][false]['return'] = 'reply';
 		$this->dispatchArray['get'][true][null] = 'test';
-		$this->dispatchArray['post'][true][null] = 'testpost';
+		$this->dispatchArray['post'][false]['insert'] = 'insertUser';
+		$this->dispatchArray['post'][false][null] = 'insertUser';
+		$this->dispatchArray['get'][false]['echo'] = 'echoMe';
+
+		$this -> nebulaDB = new DB();
 	}
 	
 	public function testpost() {
@@ -20,6 +24,12 @@ class Profiles extends Element {
 	public function test() {
 		$status = 200;
 		$result = 'blabla';
+		return new Response($status, $result);
+	}
+	
+	public function echoMe($data) {
+		$status = 200;
+		$result = array($data['message']);
 		return new Response($status, $result);
 	}
 	
