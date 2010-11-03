@@ -16,6 +16,7 @@ function myErrorHandler($errno, $errstr, $errfile, $errline) {
 	RestUtils::error(500, $report);
 }
 
+include('db.class.php');
 include('Resource.class.php');
 include('Profiles.class.php');
 include('Contacts.class.php');

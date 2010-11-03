@@ -2,57 +2,30 @@
 class RestUtils {
 
 	public static function authentication() {
-		function http_digest_parse($txt)
-		{
-			// protect against missing data
-			$needed_parts = array('nonce'=>1, 'nc'=>1, 'cnonce'=>1, 'qop'=>1, 'username'=>1, 'uri'=>1, 'response'=>1);
-			$data = array();
-			$keys = implode('|', array_keys($needed_parts));
-
-			preg_match_all('@(' . $keys . ')=(?:([\'"])([^\2]+?)\2|([^\s,]+))@', $txt, $matches, PREG_SET_ORDER);
-
-			foreach ($matches as $m) {
-				$data[$m[1]] = $m[3] ? $m[3] : $m[4];
-				unset($needed_parts[$m[1]]);
-			}
-
-			return $needed_parts ? false : $data;
-		}
-		//return true;
-		
-		//TODO authentication
-		$realm = 'NebulaREST';
-		
-		$users = array('nebula' => 'nebula');
-
-		if (empty($_SERVER['PHP_AUTH_DIGEST'])) {
-			header('HTTP/1.1 401 Unauthorized');
-			header('WWW-Authenticate: Digest realm="'.$realm.'",qop="auth",nonce="'.uniqid().'",opaque="'.md5($realm).'"');
-
-			return false;
+//		print_r($_SERVER);
+		if (!isset($_SERVER['PHP_AUTH_USER'])) {
+		    header('WWW-Authenticate: Basic realm="My Realm"');
+		    header('HTTP/1.0 401 Unauthorized');
+		    echo 'Text to send if user hits Cancel button';
+		    exit;
+		} else {	
+			$db = new DB();
+			$username = mysql_real_escape_string($_SERVER['PHP_AUTH_USER']);
+			$password = mysql_real_escape_string($_SERVER['PHP_AUTH_PW']);
+			$sql = "SELECT userID from nebulauser WHERE username='$username' AND password='$password'";
+			$q = $db->query($sql);
+			if( mysql_num_rows( $q ) )
+				return true;
+			else
+				return false;
 		}
 
-		// analyze the PHP_AUTH_DIGEST variable
-		if (!($data = http_digest_parse($_SERVER['PHP_AUTH_DIGEST'])) ||
-			!isset($users[$data['username']]))
-			//Database connection, retrieve row for $data['username']
-			return false;
-
-		// generate the valid response
-		
-		$A1 = md5($data['username'] . ':' . $realm . ':' . $users[$data['username']]);
-		$A2 = md5($_SERVER['REQUEST_METHOD'].':'.$data['uri']);
-		$valid_response = md5($A1.':'.$data['nonce'].':'.$data['nc'].':'.$data['cnonce'].':'.$data['qop'].':'.$A2);
-
-		if ($data['response'] != $valid_response)
-			return false;
-			
-		return true;
+		return false;
 	}
 
 	public static function processRequest() {
-		/*if( !RestUtils::authentication() )
-			RestUtils::error(401);*/
+		if( !RestUtils::authentication() )
+			RestUtils::error(401);
 	
 		// get our verb
 		$request_method = strtolower($_SERVER['REQUEST_METHOD']);
@@ -95,9 +68,9 @@ class RestUtils {
 				// Parses str  as if it were the query string passed via a URL and sets
 				// variables in the current scope.
 				$contents = file_get_contents('php://input');
+
 				//die('-'.$contents.'-');
 				$data = RestUtils::data_decode( $contents, $_SERVER['CONTENT_TYPE'] );
-				
 				//$data = $contents;
 				break;
 		}
@@ -223,7 +196,7 @@ class RestUtils {
 	public static function data_encode($contents, $type='json') {
 		switch($type) {
 			case 'json':
-				return json_encode($contents);
+				return json_encode($contents, JSON_FORCE_OBJECT);
 			case 'xml':
 				return RestUtils::xml_encode('nebula', $contents);
 		}
@@ -286,24 +259,31 @@ class RestUtils {
 		);
 
 		return (isset($codes[$status])) ? $codes[$status] : '';
+
 	}
 
 	public static function sendResponse($status = 200, $body = '', $type = 'json') {
+		if(is_string($body))
+			$body = array('result' => $body);
+			
 		$status_header = 'HTTP/1.1 ' . $status . ' ' . RestUtils::getStatusCodeMessage($status);
 		// set the status
 		header($status_header);
 		// set the content type
 		if($type == 'json')
 			header('Content-type: application/json');
-		if($type == 'xml')
+		else if($type == 'xml')
 			header('Content-type: application/xml');
+		else
+			header('Content-type: text/html');
+		
 
 		// pages with body are easy
 		if($body != '') {
 			// send the body
 			if($type == 'json')
 				$body = RestUtils::data_encode($body, 'json');
-			if($type == 'xml')
+			else if($type == 'xml')
 				$body = RestUtils::data_encode($body, 'xml');
 		}
 		// we need to create the body if none is passed
