@@ -1,14 +1,24 @@
 <?php
 class DB {
 
+	private $prefix;
+
 	//make connection
 	function __construct() {
 		$host = "localhost";
 		$username = "root";
-		$prefix = 'n_';
+		$this->prefix = 'n_';
 		$password = "safesql";
 		$database = "nebula";
 		$this->connect($host, $username, $password, $database);
+		$nebulaUser = "nebula.n_nebulauser";
+		$subscriber = "nebula.subscriber";
+		$groupUser = "nebula.n_groupuser";
+		$log = "nebula.n_log";
+		$nebulaGroup = "nebula.n_nebulagroup";
+		$nebulaUser = "nebula.n_nebulauser";
+		$nebulaContact = "nebula.n_nonnebulacontact";
+		$userToUser = "nebula.n_usertouser";
 	}
 	
 	//connection..
@@ -26,7 +36,9 @@ class DB {
 	function query($sql) {
 		$q = mysql_query($sql);//die('SQL: '.$sql.'<br/>Error: '.mysql_error());
 		if(!$q)
-			throw new Exception('SQL: '.$sql.'<br/>Error: '.mysql_error());
+			RestUtils::error(500, mysql_error()."\n".$sql);
+//			die(mysql_error()."\n".$sql);
+//			throw new Exception('SQL: '.$sql.'<br/>Error: '.mysql_error());
 		return $q;
 	}
     
@@ -53,7 +65,7 @@ class DB {
     
 	//array(id=>'12', column1 => 'vafdsfds')
 	function insertArray($array, $table) {
-		$sql = 'INSERT into '.$prefix.$table.' (';
+		$sql = 'INSERT into '.$this->prefix.$table.' (';
 		$i = 1;
 		foreach($array as $k=>$v)
 			$sql .= '`'.mysql_real_escape_string($k).'`'.($i++!=count($array) ? ', ':'');

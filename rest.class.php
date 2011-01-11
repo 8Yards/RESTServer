@@ -3,6 +3,7 @@ class RestUtils {
 
 	public static function authentication() {
 //		print_r($_SERVER);
+//		exit();
 		if (!isset($_SERVER['PHP_AUTH_USER'])) {
 		    header('WWW-Authenticate: Basic realm="My Realm"');
 		    header('HTTP/1.0 401 Unauthorized');
@@ -12,21 +13,25 @@ class RestUtils {
 			$db = new DB();
 			$username = mysql_real_escape_string($_SERVER['PHP_AUTH_USER']);
 			$password = mysql_real_escape_string($_SERVER['PHP_AUTH_PW']);
-			$sql = "SELECT userID from nebulauser WHERE username='$username' AND password='$password'";
+			$domain = 'nebula.com';
+
+			$hash = md5($username .':'. $domain .':'. $password);
+			
+			$sql = "SELECT id from n_nebulauser WHERE username='$username' AND ha1='$hash'";
+
 			$q = $db->query($sql);
-			if( mysql_num_rows( $q ) )
-				return true;
+			if( mysql_num_rows( $q ) ){
+				$fetch = mysql_fetch_assoc($q);
+				return $fetch['id'];
+			}
 			else
-				return false;
+				return null;
 		}
 
 		return false;
 	}
 
 	public static function processRequest() {
-		if( !RestUtils::authentication() )
-			RestUtils::error(401);
-	
 		// get our verb
 		$request_method = strtolower($_SERVER['REQUEST_METHOD']);
 		$element = $_GET['REST_element'];
@@ -38,8 +43,7 @@ class RestUtils {
 		if(isset($_GET['REST_operation']))
 			$operation = $_GET['REST_operation'];
 			
-		if(isset($_GET['REST_format']))
-			$operation = $_GET['REST_format'];
+		
 			
 		$return_obj		= new RestRequest();
 		// we'll store our data here
@@ -67,6 +71,7 @@ class RestUtils {
 				// and then parse it out into an array via parse_str... per the PHP docs:
 				// Parses str  as if it were the query string passed via a URL and sets
 				// variables in the current scope.
+
 				$contents = file_get_contents('php://input');
 
 				//die('-'.$contents.'-');
@@ -204,11 +209,34 @@ class RestUtils {
 	
 	public static function data_decode($contents, $type='json') {
 		if( strpos($type, 'json') )
-			return json_decode($contents);
+			return json_decode($contents, true);
 		else
 			//return RestUtils::xml_decode($contents);
-			return simplexml_load_string($contents);
-	}
+			$xml = simplexml_load_string($contents);
+			return RestUtils::objectsIntoArray($xml);	}
+
+function objectsIntoArray($arrObjData, $arrSkipIndices = array())
+{
+    $arrData = array();
+    
+    // if input is object, convert into array
+    if (is_object($arrObjData)) {
+        $arrObjData = get_object_vars($arrObjData);
+    }
+    
+    if (is_array($arrObjData)) {
+        foreach ($arrObjData as $index => $value) {
+            if (is_object($value) || is_array($value)) {
+                $value = objectsIntoArray($value, $arrSkipIndices); // recursive call
+            }
+            if (in_array($index, $arrSkipIndices)) {
+                continue;
+            }
+            $arrData[$index] = $value;
+        }
+    }
+    return $arrData;
+}
 
 	public static function getStatusCodeMessage($status) {
 		// these could be stored in a .ini file and loaded
@@ -263,7 +291,9 @@ class RestUtils {
 	}
 
 	public static function sendResponse($status = 200, $body = '', $type = 'json') {
-		if(is_string($body))
+		if($body == '')
+			$body = array();
+		elseif(is_string($body) && ($type=='json' || $type=='xml'))
 			$body = array('result' => $body);
 			
 		$status_header = 'HTTP/1.1 ' . $status . ' ' . RestUtils::getStatusCodeMessage($status);
@@ -317,10 +347,7 @@ class RestUtils {
 		exit();
 	}
 	
-	public static function error($status='', $body='') {
-		if($status == '')
-			$status = 500;
-		
+	public static function error($status='500', $body='') {
 		//DEBUG Mode
 		RestUtils::sendResponse($status, $body, $type='text/html');
 		//Production Mode
